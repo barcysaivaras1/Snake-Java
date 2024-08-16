@@ -22,11 +22,16 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
     int boardWidth;
     int boardHeight;
     int tileSize = 25;
+    int num_players;
 
 
-    //Snake
-    Tile snakeHead;
-    ArrayList<Tile> snakeBody;
+    //Player 1 Snake
+    Tile snakeHead1;
+    ArrayList<Tile> snakeBody1;
+
+    //Player 2 Snake
+    Tile snakeHead2;
+    ArrayList<Tile> snakeBody2;
 
 
     //Food
@@ -35,28 +40,42 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
 
     //game logic
     Timer gameLoop;
-    int velocityX;
-    int velocityY;
+    //Player1
+    int velocityX1;
+    int velocityY1;
+    //Player2
+    int velocityX2;
+    int velocityY2;
     boolean gameOver = false;
 
-    Snake(int boardWidth,int boardHeight){
+    Snake(int boardWidth,int boardHeight,int num_players){
         this.boardWidth = boardWidth;
         this.boardHeight = boardHeight;
+        this.num_players = num_players;
         setPreferredSize(new Dimension(this.boardWidth,this.boardHeight));
         setBackground(Color.black);
         addKeyListener(this);
         setFocusable(true);
 
-        snakeHead = new Tile(5,5);
-        snakeBody = new ArrayList<Tile>();
+        //Player 1
+        snakeHead1 = new Tile(5,5);
+        snakeBody1 = new ArrayList<Tile>();
 
+        //Player 2
+        if(num_players !=1) {
+            snakeHead2 = new Tile(19, 19);
+            snakeBody2 = new ArrayList<Tile>();
+
+            velocityX2 = 0;
+            velocityY2 = 0;
+        }
         food = new Tile(10,10);
         random = new Random();
 
         placeFood();
 
-        velocityX = 0;
-        velocityY = 0;
+        velocityX1 = 0;
+        velocityY1 = 0;
 
         gameLoop = new Timer(100,this);
         gameLoop.start();
@@ -81,27 +100,77 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
         g.setColor(Color.red);
         g.fill3DRect(food.x*tileSize,food.y*tileSize, tileSize, tileSize,true);
 
-        //Snake Head
+        //Snake Head Player 1
         g.setColor(Color.green);
-        g.fill3DRect(snakeHead.x * tileSize, snakeHead.y * tileSize,tileSize,tileSize,true);
+        g.fill3DRect(snakeHead1.x * tileSize, snakeHead1.y * tileSize,tileSize,tileSize,true);
 
-        //Snake Body
-        for (int i =0; i<snakeBody.size();i++){
-            Tile snakePart = snakeBody.get(i);
+        //Snake Head Player 2
+        if (num_players!=1){
+            g.setColor(Color.cyan);
+            g.fill3DRect(snakeHead2.x * tileSize, snakeHead2.y * tileSize,tileSize,tileSize,true);
+        }
+
+        //Snake Body Player 1
+        g.setColor(Color.green);
+        for (int i =0; i<snakeBody1.size();i++){
+            Tile snakePart = snakeBody1.get(i);
             g.fill3DRect(snakePart.x*tileSize,snakePart.y*tileSize,tileSize,tileSize,true);
         }
 
+        //Snake Body Player 2
+        if(num_players != 1) {
+            g.setColor(Color.cyan);
+            for (int i = 0; i < snakeBody2.size(); i++) {
+                Tile snakePart = snakeBody2.get(i);
+                g.fill3DRect(snakePart.x * tileSize, snakePart.y * tileSize, tileSize, tileSize, true);
+            }
+        }
+
+
         //Score
         if(gameOver) {
-            g.setFont(new Font("Arial", Font.PLAIN, 40));
-            FontMetrics metrics = g.getFontMetrics();
-            g.setColor(Color.red);
-            int stringWidth =  metrics.stringWidth("Game Over : ");
-            g.drawString("Game Over : " + String.valueOf(snakeBody.size()), (boardWidth/2)-(stringWidth/2) , boardHeight/4);
+            //1 Player
+            if (num_players == 1){
+                g.setFont(new Font("Arial", Font.PLAIN, 40));
+                FontMetrics metrics = g.getFontMetrics();
+                g.setColor(Color.red);
+                int stringWidth =  metrics.stringWidth("Game Over : "+String.valueOf(snakeBody1.size()));
+                g.drawString("Game Over : " + String.valueOf(snakeBody1.size()), (boardWidth/2)-(stringWidth/2) , boardHeight/4);
+                }
+            //2 Players
+            else{
+                g.setFont(new Font("Arial", Font.PLAIN, 80));
+
+                //Game Over Text
+                FontMetrics metrics = g.getFontMetrics();
+                g.setColor(Color.red);
+                int stringWidth =  metrics.stringWidth("Game Over");
+                g.drawString("Game Over", (boardWidth/2)-(stringWidth/2) , boardHeight/4);
+
+                g.setFont(new Font("Arial", Font.PLAIN, 40));
+                metrics = g.getFontMetrics();
+                //Player 1 Game Over Score
+                stringWidth =  metrics.stringWidth("Player 1 : "+String.valueOf(snakeBody1.size()));
+                g.setColor(Color.GREEN);
+                g.drawString("Player 1 : " + String.valueOf(snakeBody1.size()), (boardWidth/2)-(stringWidth/2) , boardHeight/4 + 100);
+
+                //Player 2 Game Over Score
+                stringWidth =  metrics.stringWidth("Player 2 : "+snakeBody2.size());
+                g.setColor(Color.CYAN);
+                g.drawString("Player 2 : " + String.valueOf(snakeBody2.size()), (boardWidth/2)-(stringWidth/2) , boardHeight/4 + 200);
+            }
         }
         else{
+            g.setColor(Color.green);
             g.setFont(new Font("Arial",Font.BOLD,20));
-            g.drawString("Score : " + String.valueOf(snakeBody.size()),tileSize-16,tileSize);
+            g.drawString("Score : " + String.valueOf(snakeBody1.size()),tileSize-16,tileSize);
+
+            // 2 Player Mode
+            if(num_players!=1){
+                g.setColor(Color.CYAN);
+                g.setFont(new Font("Arial",Font.BOLD,20));
+                g.drawString("Score : " + String.valueOf(snakeBody2.size()),boardWidth-tileSize*4,tileSize);
+            }
         }
     }
 
@@ -114,7 +183,7 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
         return tile1.x == tile2.x && tile1.y == tile2.y;
     }
 
-    public void move(){
+    public void move(Tile snakeHead, ArrayList<Tile> snakeBody,int player){
         //Eat food
         if (collision(snakeHead,food)){
             snakeBody.add(new Tile(food.x,food.y));
@@ -136,11 +205,43 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
         }
 
         //SnakeHead
-        snakeHead.x += velocityX;
-        snakeHead.y += velocityY;
+        if(player==1){
+        snakeHead.x += velocityX1;
+        snakeHead.y += velocityY1;
+        }
+        else{
+            snakeHead.x += velocityX2;
+            snakeHead.y += velocityY2;
+        }
 
         //Game Over Conditions
-        //Collides with body
+
+        //Self Collision
+        bodyCollision(snakeHead,snakeBody);
+
+        //Out of Bounds Collision
+        if(snakeHead.x*tileSize < 0 || snakeHead.x*tileSize>boardWidth ||
+            snakeHead.y*tileSize<0 || snakeHead.y*tileSize>boardHeight){
+            gameOver = true;
+        }
+
+        //Player on Player Collisions
+        if(num_players != 1){
+            //Head To Head Collision
+            if(snakeHead1.x == snakeHead2.x && snakeHead1.y == snakeHead2.y){
+                gameOver = true;
+            }
+
+            //Player 1 Head collides with Player 2 Body
+            bodyCollision(snakeHead1,snakeBody2);
+
+            //Player 2 Head collides with Player 1 Body
+            bodyCollision(snakeHead2,snakeBody1);
+        }
+    }
+
+
+    public void bodyCollision(Tile snakeHead, ArrayList<Tile> snakeBody){
         for(int i =0; i< snakeBody.size();i++){
             Tile snakePart = snakeBody.get(i);
             //Collides with body
@@ -148,15 +249,14 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
                 gameOver = true;
             }
         }
-        if(snakeHead.x*tileSize < 0 || snakeHead.x*tileSize>boardWidth ||
-            snakeHead.y*tileSize<0 || snakeHead.y*tileSize>boardHeight){
-            gameOver = true;
-        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        move();
+        move(snakeHead1,snakeBody1,1);
+        if (num_players != 1) {
+            move(snakeHead2, snakeBody2, 2);
+        }
         repaint();
         if(gameOver){
             gameLoop.stop();
@@ -165,22 +265,64 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
     //Checks if a key has been pressed
     @Override
     public void keyPressed(KeyEvent e) {
-        if((e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) && velocityY != 1){
-            velocityX = 0;
-            velocityY = -1;
+
+        if(num_players == 1){
+            if((e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) && velocityY1 != 1){
+                velocityX1 = 0;
+                velocityY1 = -1;
+            }
+            else if((e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) && velocityY1 != -1){
+                velocityY1 = 1;
+                velocityX1 = 0;
+            }
+            else if ((e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) && velocityX1 != 1){
+                velocityX1 = -1;
+                velocityY1 = 0;
+            }
+            else if ((e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) && velocityX1 != -1){
+                velocityX1 = 1;
+                velocityY1 = 0;
+            }
         }
-        else if((e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) && velocityY != -1){
-            velocityY = 1;
-            velocityX = 0;
+        else{
+            //Player 1 Movement
+            if(e.getKeyCode() == KeyEvent.VK_W && velocityY1 != 1){
+                velocityX1 = 0;
+                velocityY1 = -1;
+            }
+            else if(e.getKeyCode() == KeyEvent.VK_S && velocityY1 != -1){
+                velocityY1 = 1;
+                velocityX1 = 0;
+            }
+            else if (e.getKeyCode() == KeyEvent.VK_A && velocityX1 != 1){
+                velocityX1 = -1;
+                velocityY1 = 0;
+            }
+            else if (e.getKeyCode() == KeyEvent.VK_D && velocityX1 != -1){
+                velocityX1 = 1;
+                velocityY1 = 0;
+            }
+
+            //Player 2 Movement
+            if(e.getKeyCode() == KeyEvent.VK_UP && velocityY2 != 1){
+                velocityX2 = 0;
+                velocityY2 = -1;
+            }
+            else if(e.getKeyCode() == KeyEvent.VK_DOWN && velocityY2 != -1){
+                velocityX2 = 0;
+                velocityY2 = 1;
+            }
+            else if(e.getKeyCode() == KeyEvent.VK_LEFT && velocityX2 != 1){
+                velocityX2 = -1;
+                velocityY2 = 0;
+            }
+            else if(e.getKeyCode() == KeyEvent.VK_RIGHT && velocityX2 != -1){
+                velocityX2 = 1;
+                velocityY2 = 0;
+            }
+
         }
-        else if ((e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) && velocityX != 1){
-            velocityX = -1;
-            velocityY = 0;
-        }
-        else if ((e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) && velocityX != -1){
-            velocityX = 1;
-            velocityY = 0;
-        }
+
     }
     //Not needed
     @Override
