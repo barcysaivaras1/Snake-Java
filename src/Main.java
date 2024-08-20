@@ -41,12 +41,18 @@ public class Main{
         player2.setFocusable(false);
         player2.setPreferredSize(new Dimension(200,100));
 
+        JButton playerAI = new JButton("Player vs AI");
+        playerAI.setBackground(Color.ORANGE);
+        playerAI.setFocusable(false);
+        playerAI.setPreferredSize(new Dimension(200,100));
+
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new FlowLayout(FlowLayout.CENTER,50, 50));
         mainPanel.setPreferredSize(new Dimension(600,500));
         mainPanel.setBackground(Color.black);
         mainPanel.add(player1);
         mainPanel.add(player2);
+        mainPanel.add(playerAI);
 
         frame.add(titlePanel,BorderLayout.NORTH);
         frame.add(mainPanel);
@@ -68,6 +74,17 @@ public class Main{
             @Override
             public void actionPerformed(ActionEvent e) {
                 Snake snake = new Snake(boardWidth,boardHeight,2);
+                frame.remove(titlePanel);
+                frame.remove(mainPanel);
+                frame.add(snake);
+                frame.pack();//Ensures that when a panel is added it will not count the title bar as part of the size
+                snake.requestFocus();
+            }
+        });
+        playerAI.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Snake snake = new Snake(boardWidth,boardHeight,0);
                 frame.remove(titlePanel);
                 frame.remove(mainPanel);
                 frame.add(snake);

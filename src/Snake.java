@@ -43,9 +43,14 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
     //Player1
     int velocityX1;
     int velocityY1;
-    //Player2
+    boolean hasMovedP1 = false;
+    int inputBufferP1;  //Makes the game more responsive
+    //Player2 OR Player AI
     int velocityX2;
     int velocityY2;
+    boolean hasMovedP2 = false;
+    int inputBufferP2;  //Makes the game more responsive
+
     boolean gameOver = false;
 
     Snake(int boardWidth,int boardHeight,int num_players){
@@ -60,6 +65,7 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
         //Player 1
         snakeHead1 = new Tile(5,5);
         snakeBody1 = new ArrayList<Tile>();
+        inputBufferP1 = -1;
 
         //Player 2
         if(num_players !=1) {
@@ -68,10 +74,10 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
 
             velocityX2 = 0;
             velocityY2 = 0;
+            inputBufferP2 = -1;
         }
         food = new Tile(10,10);
         random = new Random();
-
         placeFood();
 
         velocityX1 = 0;
@@ -159,6 +165,19 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
                 g.setColor(Color.CYAN);
                 g.drawString("Player 2 : " + String.valueOf(snakeBody2.size()), (boardWidth/2)-(stringWidth/2) , boardHeight/4 + 200);
             }
+
+            JButton restartButton = new JButton("Restart?");
+            restartButton.setBounds(boardWidth/2 - 75,boardHeight/4 +250,150,75);
+            restartButton.setBackground(Color.green);
+            restartButton.setForeground(Color.black);
+            restartButton.setFocusable(false);
+            add(restartButton);
+            restartButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+
+                }
+            });
         }
         else{
             g.setColor(Color.green);
@@ -172,6 +191,7 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
                 g.drawString("Score : " + String.valueOf(snakeBody2.size()),boardWidth-tileSize*4,tileSize);
             }
         }
+
     }
 
     public void placeFood(){
@@ -184,6 +204,9 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
     }
 
     public void move(Tile snakeHead, ArrayList<Tile> snakeBody,int player){
+        if(num_players == 0){
+            aiMove();
+        }
         //Eat food
         if (collision(snakeHead,food)){
             snakeBody.add(new Tile(food.x,food.y));
@@ -206,49 +229,166 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
 
         //SnakeHead
         if(player==1){
-        snakeHead.x += velocityX1;
-        snakeHead.y += velocityY1;
+            snakeHead.x += velocityX1;
+            snakeHead.y += velocityY1;
+            hasMovedP1 = true;
+//            if(inputBufferP1 != -1){
+//                loadInputBuffer(inputBufferP1);
+//            }
         }
         else{
             snakeHead.x += velocityX2;
             snakeHead.y += velocityY2;
+            hasMovedP2 = true;
+//            if(inputBufferP2 != -1){
+//                loadInputBuffer(inputBufferP2);
+//            }
         }
 
         //Game Over Conditions
 
         //Self Collision
-        bodyCollision(snakeHead,snakeBody);
-
+        if (bodyCollision(snakeHead,snakeBody)){
+            gameOver = true;
+        }
         //Out of Bounds Collision
-        if(snakeHead.x*tileSize < 0 || snakeHead.x*tileSize>boardWidth ||
-            snakeHead.y*tileSize<0 || snakeHead.y*tileSize>boardHeight){
+        if(isOutOfBounds(snakeHead)){
             gameOver = true;
         }
 
         //Player on Player Collisions
+        if (playerOnPlayerCollision(snakeHead1,snakeBody1,snakeHead2,snakeBody2)){
+            gameOver = true;
+        }
+
+
+
+    }
+
+    public boolean playerOnPlayerCollision(Tile snakeHead1, ArrayList<Tile> snakeBody1, Tile snakeHead2, ArrayList<Tile> snakeBody2){
         if(num_players != 1){
             //Head To Head Collision
             if(snakeHead1.x == snakeHead2.x && snakeHead1.y == snakeHead2.y){
-                gameOver = true;
+                return true;
             }
 
             //Player 1 Head collides with Player 2 Body
-            bodyCollision(snakeHead1,snakeBody2);
+            if(bodyCollision(snakeHead1,snakeBody2)){
+                return true;
+            }
 
             //Player 2 Head collides with Player 1 Body
-            bodyCollision(snakeHead2,snakeBody1);
+            if(bodyCollision(snakeHead2,snakeBody1)){
+                return true;
+            }
         }
+        return false;
     }
 
+    public boolean isOutOfBounds(Tile snakeHead){
+        return  snakeHead.x*tileSize < 0 || snakeHead.x*tileSize>boardWidth ||
+                snakeHead.y*tileSize<0 || snakeHead.y*tileSize>boardHeight;
+    }
 
-    public void bodyCollision(Tile snakeHead, ArrayList<Tile> snakeBody){
+    public boolean bodyCollision(Tile snakeHead, ArrayList<Tile> snakeBody){
         for(int i =0; i< snakeBody.size();i++){
             Tile snakePart = snakeBody.get(i);
             //Collides with body
             if (collision(snakeHead,snakePart)){
-                gameOver = true;
+                return true;
             }
         }
+        return false;
+    }
+
+    public void aiMove(){
+        //Player vs AI
+
+        //Possible directions
+        boolean right = false;
+        boolean left = false;
+        boolean down = false;
+        boolean up = false;
+
+        if(hasMovedP2) {
+            //Can we move left without collision
+            if (!bodyCollision(new Tile(snakeHead2.x - 1, snakeHead2.y), snakeBody2) &&
+                    !playerOnPlayerCollision(snakeHead1, snakeBody1, new Tile(snakeHead2.x - 1, snakeHead2.y), snakeBody2) &&
+                    velocityX2 != 1 && !isOutOfBounds(new Tile(snakeHead2.x - 1, snakeHead2.y))) {
+                left = true;
+            }
+            //Can we move right without collision
+            if (!bodyCollision(new Tile(snakeHead2.x + 1, snakeHead2.y), snakeBody2) &&
+                    !playerOnPlayerCollision(snakeHead1, snakeBody1, new Tile(snakeHead2.x + 1, snakeHead2.y), snakeBody2) &&
+                    velocityX2 != -1 && !isOutOfBounds(new Tile(snakeHead2.x + 1, snakeHead2.y))) {
+                right = true;
+            }
+            //Can we move up without collision
+            if (!bodyCollision(new Tile(snakeHead2.x, snakeHead2.y - 1), snakeBody2) &&
+                    !playerOnPlayerCollision(snakeHead1, snakeBody1, new Tile(snakeHead2.x, snakeHead2.y - 1), snakeBody2) &&
+                    velocityY2 != 1 && !isOutOfBounds(new Tile(snakeHead2.x, snakeHead2.y - 1))) {
+                up = true;
+            }
+            //Can we move down without collision
+            if (!bodyCollision(new Tile(snakeHead2.x, snakeHead2.y + 1), snakeBody2) &&
+                    !playerOnPlayerCollision(snakeHead1, snakeBody1, new Tile(snakeHead2.x, snakeHead2.y + 1), snakeBody2) &&
+                    velocityY2 != -1 && !isOutOfBounds(new Tile(snakeHead2.x, snakeHead2.y + 1))) {
+                down = true;
+            }
+
+            //Is there a SAFE move that we can make that gets us closer to the food
+            if (food.x < snakeHead2.x && velocityX2 != 1 && left) {
+                velocityY2 = 0;
+                velocityX2 = -1;
+            } else if (food.x > snakeHead2.x && velocityX2 != -1 && right) {
+                velocityY2 = 0;
+                velocityX2 = 1;
+
+            } else if (food.y < snakeHead2.y && velocityY2 != 1 && up) {
+                velocityX2 = 0;
+                velocityY2 = -1;
+            } else if (food.y > snakeHead2.y && velocityY2 != -1 && down) {
+                velocityX2 = 0;
+                velocityY2 = 1;
+            }
+            //No SAFE move that can get us closer to the food
+            else {
+                if (left && velocityX2 != 1) {
+                    velocityY2 = 0;
+                    velocityX2 = -1;
+                } else if (right && velocityX2 != -1) {
+                    velocityY2 = 0;
+                    velocityX2 = 1;
+                } else if (down && velocityY2 != -1) {
+                    velocityX2 = 0;
+                    velocityY2 = 1;
+                } else if (up && velocityY2 != 1) {
+                    velocityX2 = 0;
+                    velocityY2 = -1;
+                }
+            }
+            hasMovedP2 = false;
+        }
+    }
+
+
+    public void loadInputBuffer(int inputBuffer){
+        if (num_players == 1 || num_players == 0) {
+                if ((inputBuffer == KeyEvent.VK_UP || inputBuffer == KeyEvent.VK_W) && velocityY1 != 1) {
+                    velocityX1 = 0;
+                    velocityY1 = -1;
+                } else if ((inputBuffer == KeyEvent.VK_DOWN || inputBuffer == KeyEvent.VK_S) && velocityY1 != -1) {
+                    velocityY1 = 1;
+                    velocityX1 = 0;
+                } else if ((inputBuffer == KeyEvent.VK_LEFT || inputBuffer == KeyEvent.VK_A) && velocityX1 != 1) {
+                    velocityX1 = -1;
+                    velocityY1 = 0;
+                } else if ((inputBuffer == KeyEvent.VK_RIGHT || inputBuffer == KeyEvent.VK_D) && velocityX1 != -1) {
+                    velocityX1 = 1;
+                    velocityY1 = 0;
+                }
+                hasMovedP1 = false;
+            }
     }
 
     @Override
@@ -266,62 +406,63 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
     @Override
     public void keyPressed(KeyEvent e) {
 
-        if(num_players == 1){
-            if((e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) && velocityY1 != 1){
-                velocityX1 = 0;
-                velocityY1 = -1;
-            }
-            else if((e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) && velocityY1 != -1){
-                velocityY1 = 1;
-                velocityX1 = 0;
-            }
-            else if ((e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) && velocityX1 != 1){
-                velocityX1 = -1;
-                velocityY1 = 0;
-            }
-            else if ((e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) && velocityX1 != -1){
-                velocityX1 = 1;
-                velocityY1 = 0;
+        if (num_players == 1 || num_players == 0) {
+            inputBufferP1 = e.getKeyCode();
+            if (hasMovedP1) {
+                if ((inputBufferP1 == KeyEvent.VK_UP || inputBufferP1 == KeyEvent.VK_W) && velocityY1 != 1) {
+                    velocityX1 = 0;
+                    velocityY1 = -1;
+                } else if ((inputBufferP1 == KeyEvent.VK_DOWN || inputBufferP1 == KeyEvent.VK_S) && velocityY1 != -1) {
+                    velocityY1 = 1;
+                    velocityX1 = 0;
+                } else if ((inputBufferP1 == KeyEvent.VK_LEFT || inputBufferP1 == KeyEvent.VK_A) && velocityX1 != 1) {
+                    velocityX1 = -1;
+                    velocityY1 = 0;
+                } else if ((inputBufferP1 == KeyEvent.VK_RIGHT || inputBufferP1 == KeyEvent.VK_D) && velocityX1 != -1) {
+                    velocityX1 = 1;
+                    velocityY1 = 0;
+                }
+                hasMovedP1 = false;
             }
         }
-        else{
-            //Player 1 Movement
-            if(e.getKeyCode() == KeyEvent.VK_W && velocityY1 != 1){
-                velocityX1 = 0;
-                velocityY1 = -1;
-            }
-            else if(e.getKeyCode() == KeyEvent.VK_S && velocityY1 != -1){
-                velocityY1 = 1;
-                velocityX1 = 0;
-            }
-            else if (e.getKeyCode() == KeyEvent.VK_A && velocityX1 != 1){
-                velocityX1 = -1;
-                velocityY1 = 0;
-            }
-            else if (e.getKeyCode() == KeyEvent.VK_D && velocityX1 != -1){
-                velocityX1 = 1;
-                velocityY1 = 0;
-            }
 
-            //Player 2 Movement
-            if(e.getKeyCode() == KeyEvent.VK_UP && velocityY2 != 1){
-                velocityX2 = 0;
-                velocityY2 = -1;
+        else if (num_players == 2){
+            if(hasMovedP1) {
+                //Player 1 Movement
+                if (e.getKeyCode() == KeyEvent.VK_W && velocityY1 != 1) {
+                    velocityX1 = 0;
+                    velocityY1 = -1;
+                } else if (e.getKeyCode() == KeyEvent.VK_S && velocityY1 != -1) {
+                    velocityY1 = 1;
+                    velocityX1 = 0;
+                } else if (e.getKeyCode() == KeyEvent.VK_A && velocityX1 != 1) {
+                    velocityX1 = -1;
+                    velocityY1 = 0;
+                } else if (e.getKeyCode() == KeyEvent.VK_D && velocityX1 != -1) {
+                    velocityX1 = 1;
+                    velocityY1 = 0;
+                }
+                hasMovedP1 = false;
             }
-            else if(e.getKeyCode() == KeyEvent.VK_DOWN && velocityY2 != -1){
-                velocityX2 = 0;
-                velocityY2 = 1;
+            if(hasMovedP2) {
+                //Player 2 Movement
+                if (e.getKeyCode() == KeyEvent.VK_UP && velocityY2 != 1) {
+                    velocityX2 = 0;
+                    velocityY2 = -1;
+                } else if (e.getKeyCode() == KeyEvent.VK_DOWN && velocityY2 != -1) {
+                    velocityX2 = 0;
+                    velocityY2 = 1;
+                } else if (e.getKeyCode() == KeyEvent.VK_LEFT && velocityX2 != 1) {
+                    velocityX2 = -1;
+                    velocityY2 = 0;
+                } else if (e.getKeyCode() == KeyEvent.VK_RIGHT && velocityX2 != -1) {
+                    velocityX2 = 1;
+                    velocityY2 = 0;
+                }
+                hasMovedP2 = false;
             }
-            else if(e.getKeyCode() == KeyEvent.VK_LEFT && velocityX2 != 1){
-                velocityX2 = -1;
-                velocityY2 = 0;
-            }
-            else if(e.getKeyCode() == KeyEvent.VK_RIGHT && velocityX2 != -1){
-                velocityX2 = 1;
-                velocityY2 = 0;
-            }
-
         }
+
 
     }
     //Not needed
