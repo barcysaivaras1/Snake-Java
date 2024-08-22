@@ -92,8 +92,6 @@ public class Main{
                 snake.requestFocus();
             }
         });
-
-
         frame.setVisible(true);
 
     }
