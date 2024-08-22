@@ -286,8 +286,8 @@ public class Snake extends JPanel implements ActionListener, KeyListener{
     }
 
     public boolean isOutOfBounds(Tile snakeHead){
-        return  snakeHead.x*tileSize < 0 || snakeHead.x*tileSize>boardWidth ||
-                snakeHead.y*tileSize<0 || snakeHead.y*tileSize>boardHeight;
+        return  snakeHead.x*tileSize < 0 || snakeHead.x*tileSize>=boardWidth ||
+                snakeHead.y*tileSize<0 || snakeHead.y*tileSize>=boardHeight;
     }
 
     public boolean bodyCollision(Tile snakeHead, ArrayList<Tile> snakeBody){
