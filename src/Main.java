@@ -34,7 +34,7 @@ public class Main{
         player1.setFocusable(false);
         player1.setPreferredSize(new Dimension(200,100));
 
-
+        System.out.println("Apples");
 
         JButton player2 = new JButton("2 Players");
         player2.setBackground(Color.CYAN);
@@ -70,6 +70,7 @@ public class Main{
         });
 
 
+        System.out.println("I like apples");
         player2.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -92,7 +93,7 @@ public class Main{
                 snake.requestFocus();
             }
         });
-
+        System.out.println("I like apples");
 
         frame.setVisible(true);
 
